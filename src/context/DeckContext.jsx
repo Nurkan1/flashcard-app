@@ -33,6 +33,7 @@ export const DeckProvider = ({ children }) => {
         const parsedDecks = JSON.parse(savedDecks);
         // Validate that it's an array
         if (Array.isArray(parsedDecks)) {
+          console.log('📂 Loaded from localStorage:', parsedDecks.length, 'decks');
           setDecks(parsedDecks);
         } else {
           console.warn('Invalid data format in localStorage, initializing with empty array');
@@ -48,7 +49,9 @@ export const DeckProvider = ({ children }) => {
   // Save decks to localStorage whenever they change
   useEffect(() => {
     try {
-      localStorage.setItem('flashcard_decks', JSON.stringify(decks));
+      const dataToSave = JSON.stringify(decks);
+      localStorage.setItem('flashcard_decks', dataToSave);
+      console.log('💾 Saved to localStorage:', decks.length, 'decks');
     } catch (error) {
       console.error('Error saving decks to localStorage:', error);
     }
@@ -65,10 +68,16 @@ export const DeckProvider = ({ children }) => {
       id: Date.now().toString(), // Using Date.now().toString() for unique ID
       title: title.trim(),
       description: description.trim(),
-      cards: []
+      cards: [],
+      cardCount: 0
     };
 
-    setDecks(prevDecks => [...prevDecks, newDeck]);
+    console.log('➕ Creating deck:', newDeck);
+    setDecks(prevDecks => {
+      const updated = [...prevDecks, newDeck];
+      console.log('📋 Total decks after creation:', updated.length);
+      return updated;
+    });
     return newDeck;
   };
 
@@ -96,16 +105,22 @@ export const DeckProvider = ({ children }) => {
       answer: answer.trim()
     };
 
+    console.log('➕ Adding card to deck:', deckId);
+    console.log('📝 New card:', newCard);
+
     let cardAdded = false;
 
     setDecks(prevDecks => 
       prevDecks.map(deck => {
         if (deck.id === deckId) {
           cardAdded = true;
-          return {
+          const updatedDeck = {
             ...deck,
-            cards: [...deck.cards, newCard]
+            cards: [...deck.cards, newCard],
+            cardCount: deck.cards.length + 1
           };
+          console.log('📋 Deck after adding card:', updatedDeck.title, '-', updatedDeck.cardCount, 'cards');
+          return updatedDeck;
         }
         return deck;
       })
@@ -129,9 +144,10 @@ export const DeckProvider = ({ children }) => {
           const originalCardCount = deck.cards.length;
           const updatedDeck = {
             ...deck,
-            cards: deck.cards.filter(card => card.id !== cardId)
+            cards: deck.cards.filter(card => card.id !== cardId),
+            cardCount: originalCardCount - 1
           };
-          cardDeleted = updatedDeck.cards.length < originalCardCount;
+          cardDeleted = true;
           return updatedDeck;
         }
         return deck;
