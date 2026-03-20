@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 
 // Create the context
 const DeckContext = createContext();
@@ -21,30 +21,22 @@ export const useDeck = () => {
  * @param {React.ReactNode} props.children - Child components
  */
 export const DeckProvider = ({ children }) => {
-  // State for decks array
-  const [decks, setDecks] = useState([]);
-
-  // Load decks from localStorage on component mount
-  useEffect(() => {
-    const savedDecks = localStorage.getItem('flashcard_decks');
-    
-    if (savedDecks) {
-      try {
+  // Initialize from localStorage immediately to avoid HMR issues
+  const initializeDecks = useMemo(() => {
+    try {
+      const savedDecks = localStorage.getItem('flashcard_decks');
+      if (savedDecks) {
         const parsedDecks = JSON.parse(savedDecks);
-        // Validate that it's an array
-        if (Array.isArray(parsedDecks)) {
-          console.log('📂 Loaded from localStorage:', parsedDecks.length, 'decks');
-          setDecks(parsedDecks);
-        } else {
-          console.warn('Invalid data format in localStorage, initializing with empty array');
-          setDecks([]);
-        }
-      } catch (error) {
-        console.error('Error loading decks from localStorage:', error);
-        setDecks([]);
+        return Array.isArray(parsedDecks) ? parsedDecks : [];
       }
+    } catch (error) {
+      console.error('Error loading decks from localStorage:', error);
+      return [];
     }
   }, []);
+
+  // State for decks array
+  const [decks, setDecks] = useState(initializeDecks);
 
   // Save decks to localStorage whenever they change
   useEffect(() => {
